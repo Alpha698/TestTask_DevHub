@@ -19,6 +19,8 @@ public class PortalSpawner : MonoBehaviour
 
     private void SpawnEnemy()
     {
+        if (!GameManager.Instance.IsGameStarted()) return;
+
         GameObject enemy = Instantiate(enemyPrefab, new Vector3(transform.position.x, 0.08f, transform.position.z), Quaternion.identity);
         Enemy enemyScript = enemy.GetComponent<Enemy>();
         enemyScript.SetPath(pathWaypoints);

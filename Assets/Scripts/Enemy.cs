@@ -14,6 +14,8 @@ public class Enemy : MonoBehaviour
     private Animator animator;
     [SerializeField]
     private ParticleSystem hitEffect;
+    [SerializeField]
+    private AudioSource deathAudio;
 
     private List<Transform> pathPoints;
     private int currentPointIndex = 0;
@@ -80,6 +82,9 @@ public class Enemy : MonoBehaviour
 
         // Play animation
         animator.SetTrigger("Death");
+
+        // Play audio
+        deathAudio.Play();
 
         // Remove the object after a delay
         Destroy(gameObject, 3f);

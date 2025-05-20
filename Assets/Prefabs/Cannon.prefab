@@ -24158,15 +24158,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 01ac4fa9b447b0b4bbdae5ad30a9ce4b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  fireButton: {fileID: 0}
-  fireButtonText: {fileID: 0}
-  reloadSlider: {fileID: 0}
-  reloadTime: 3
-  cannonPrefab: {fileID: 6184906995213230907}
   cannonBallPrefab: {fileID: 6488643513552342346, guid: ff90778b68e10e24ead7e58a259ee9ab, type: 3}
   fireAudio: {fileID: 2912741911618753562}
   fireEffect: {fileID: 6819513171660708197}
-  LoseEffect: {fileID: 7617072750190618696}
+  loseEffect: {fileID: 7617072750190618696}
   muzzle: {fileID: 8938912472427903938}
   lineRenderer: {fileID: 9200519790287554704}
   groundMask:
