@@ -104,6 +104,13 @@ public class GameManager : MonoBehaviour
         fireButtonText.color = fadedColor;
         reloadSlider.value = 0f;
 
+        StartCoroutine(DefeatDelay());
+    }
+
+    private IEnumerator DefeatDelay()
+    {
+        yield return new WaitForSeconds(1f);
+
         // Show lose popup
         losePopup.SetActive(true);
         ShowPopup(losePopupCointainer);

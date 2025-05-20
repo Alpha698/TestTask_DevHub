@@ -3,14 +3,10 @@ using System.Collections.Generic;
 
 public class PortalSpawner : MonoBehaviour
 {
-    [SerializeField] 
-    private GameObject enemyPrefab;
-    [SerializeField] 
-    private float spawnInterval = 3f;
-    [SerializeField] 
-    private float initialSpawnDelay = 0f;
-    [SerializeField] 
-    private List<Transform> pathWaypoints;
+    [SerializeField] private GameObject enemyPrefab;
+    [SerializeField] private float spawnInterval = 3f;
+    [SerializeField] private float initialSpawnDelay = 0f;
+    [SerializeField] private List<Transform> pathWaypoints;
 
     private void Start()
     {

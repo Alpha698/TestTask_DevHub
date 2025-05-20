@@ -1,10 +1,13 @@
 ﻿using UnityEngine;
+using UnityEngine.EventSystems;
 
 public class CannonController : MonoBehaviour
 {
     [Header("Prefabs & Effects")]
     [SerializeField] private GameObject cannonBallPrefab;
-    [SerializeField] private AudioSource fireAudio;
+    [SerializeField] private AudioSource cannonAudioSource;
+    [SerializeField] private AudioClip fireAudioClip;
+    [SerializeField] private AudioClip defeatAudioClip;
     [SerializeField] private ParticleSystem fireEffect;
     [SerializeField] private ParticleSystem loseEffect;
     [SerializeField] private Transform muzzle;
@@ -24,12 +27,33 @@ public class CannonController : MonoBehaviour
         if (GameManager.Instance == null || GameManager.Instance.IsGameOver() || !GameManager.Instance.IsGameStarted()) return;
 
         // Turn cannon and make the trajectory of the cannonball flight to the place of the click
-        if (Input.GetMouseButton(0) && !UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject())
+        if (Input.GetMouseButton(0))
         {
-            SetTargetPoint();
-            RotateCannonToTarget();
-            DrawTrajectory();
+            bool isOverUI = false;
+
+            // Check if click by UI and not by 3D location
+#if UNITY_ANDROID || UNITY_IOS
+            if (!Application.isEditor && Input.touchCount > 0)
+            {
+                Touch touch = Input.GetTouch(0);
+                isOverUI = EventSystem.current.IsPointerOverGameObject(touch.fingerId);
+            }
+            else
+            {
+                isOverUI = EventSystem.current.IsPointerOverGameObject();
+            }
+#else
+    isOverUI = EventSystem.current.IsPointerOverGameObject();
+#endif
+
+            if (!isOverUI)
+            {
+                SetTargetPoint();
+                RotateCannonToTarget();
+                DrawTrajectory();
+            }
         }
+
     }
 
     private void SetTargetPoint()
@@ -95,7 +119,8 @@ public class CannonController : MonoBehaviour
         rb.velocity = CalculateBallisticVelocity(muzzle.position, targetPoint, arcHeight);
         rb.useGravity = true;
 
-        fireAudio.Play();
+        cannonAudioSource.clip = fireAudioClip;
+        cannonAudioSource.Play();
         fireEffect.Play();
     }
 
@@ -104,6 +129,9 @@ public class CannonController : MonoBehaviour
         if (isLose) return;
 
         //If the cannon is destroyed then off the activity
+        cannonAudioSource.clip = defeatAudioClip;
+        cannonAudioSource.Play();
+
         isLose = true;
         loseEffect.Play();
         lineRenderer.positionCount = 0;

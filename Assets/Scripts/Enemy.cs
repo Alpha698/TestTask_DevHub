@@ -7,24 +7,22 @@ public class Enemy : MonoBehaviour
 {
     public static event Action EnemyAttack;
 
-    [SerializeField]
-    private float moveSpeed = 1f;
+    [SerializeField] private float moveSpeed = 1f;
 
-    [SerializeField]
-    private Animator animator;
-    [SerializeField]
-    private ParticleSystem hitEffect;
-    [SerializeField]
-    private AudioSource deathAudio;
+    [SerializeField] private Animator animator;
+    [SerializeField] private ParticleSystem hitEffect;
+    [SerializeField] private AudioSource deathAudio;
 
     private List<Transform> pathPoints;
     private int currentPointIndex = 0;
     private bool isDead = false;
     private bool isAttacking = false;
 
+    private bool hasReachedEndPoint = false;
+
     private void Update()
     {
-        if (isDead || isAttacking || pathPoints == null || pathPoints.Count == 0) return;
+        if (isDead || isAttacking || hasReachedEndPoint || pathPoints == null || pathPoints.Count == 0) return;
 
         Transform target = pathPoints[currentPointIndex];
 
@@ -51,6 +49,7 @@ public class Enemy : MonoBehaviour
             }
             else
             {
+                hasReachedEndPoint = true;
                 Attack();
             }
         }
