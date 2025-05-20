@@ -1,100 +1,59 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using TMPro;
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.EventSystems;
-using UnityEngine.UI;
 
 public class CannonController : MonoBehaviour
 {
-    [Header("UI")]
-    [SerializeField]
-    private Button fireButton;
-    [SerializeField]
-    private TextMeshProUGUI fireButtonText;
-    [SerializeField]
-    private Slider reloadSlider;
-    [SerializeField] private float reloadTime = 3f;
+    [Header("Prefabs & Effects")]
+    [SerializeField] private GameObject cannonBallPrefab;
+    [SerializeField] private AudioSource cannonAudioSource;
+    [SerializeField] private AudioClip fireAudioClip;
+    [SerializeField] private AudioClip defeatAudioClip;
+    [SerializeField] private ParticleSystem fireEffect;
+    [SerializeField] private ParticleSystem loseEffect;
+    [SerializeField] private Transform muzzle;
 
-    [Space]
-    [SerializeField]
-    private GameObject cannonPrefab;
-    [SerializeField]
-    private GameObject cannonBallPrefab;
-    [SerializeField]
-    private AudioSource fireAudio;
-    [SerializeField]
-    private ParticleSystem fireEffect;
-    [SerializeField]
-    private ParticleSystem LoseEffect;
-    [SerializeField]
-    private Transform muzzle;
-
-    [Space]
-    [SerializeField]
-    private LineRenderer lineRenderer;
-    [SerializeField]
-    private LayerMask groundMask;
-    [SerializeField]
-    private float arcHeight = 5f;
-    [SerializeField]
-    private float trajectoryTimeStep = 0.1f;
-    [SerializeField]
-    private int trajectoryPoints = 30;
+    [Header("Trajectory")]
+    [SerializeField] private LineRenderer lineRenderer;
+    [SerializeField] private LayerMask groundMask;
+    [SerializeField] private float arcHeight = 5f;
+    [SerializeField] private float trajectoryTimeStep = 0.1f;
+    [SerializeField] private int trajectoryPoints = 30;
 
     private Vector3 targetPoint;
-    private bool isReloading = false;
     private bool isLose = false;
-
-    private void OnEnable()
-    {
-        Enemy.EnemyAttack += TakeDamage;
-    }
-
-    private void OnDisable()
-    {
-        Enemy.EnemyAttack -= TakeDamage;
-    }
-
-    private void Start()
-    {
-        fireButton.onClick.AddListener(Fire);
-    }
 
     private void Update()
     {
-        if (!isLose)
+        if (GameManager.Instance == null || GameManager.Instance.IsGameOver() || !GameManager.Instance.IsGameStarted()) return;
+
+        // Turn cannon and make the trajectory of the cannonball flight to the place of the click
+        if (Input.GetMouseButton(0))
         {
-            if (Input.GetMouseButton(0) && !IsPointerOverUI())
+            bool isOverUI = false;
+
+            // Check if click by UI and not by 3D location
+#if UNITY_ANDROID || UNITY_IOS
+            if (!Application.isEditor && Input.touchCount > 0)
             {
-                RotateCannonToTarget();
+                Touch touch = Input.GetTouch(0);
+                isOverUI = EventSystem.current.IsPointerOverGameObject(touch.fingerId);
+            }
+            else
+            {
+                isOverUI = EventSystem.current.IsPointerOverGameObject();
+            }
+#else
+    isOverUI = EventSystem.current.IsPointerOverGameObject();
+#endif
+
+            if (!isOverUI)
+            {
                 SetTargetPoint();
+                RotateCannonToTarget();
                 DrawTrajectory();
             }
         }
-    }
 
-    private bool IsPointerOverUI()
-    {
-        PointerEventData pointerData = new PointerEventData(EventSystem.current);
-        pointerData.position = Input.mousePosition;
-
-        List<RaycastResult> results = new List<RaycastResult>();
-        EventSystem.current.RaycastAll(pointerData, results);
-
-        return results.Count > 0;
-    }
-
-    private void RotateCannonToTarget()
-    {
-        Vector3 direction = targetPoint - transform.position;
-        direction.y = 0;
-
-        if (direction.sqrMagnitude > 0.001f)
-        {
-            Quaternion targetRotation = Quaternion.LookRotation(direction);
-            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * 10f);
-        }
     }
 
     private void SetTargetPoint()
@@ -103,11 +62,19 @@ public class CannonController : MonoBehaviour
         if (Physics.Raycast(ray, out RaycastHit hit, 1000f, groundMask))
         {
             Vector3 point = hit.point;
-
-            float terrainY = Terrain.activeTerrain.SampleHeight(point);
-            point.y = terrainY + Terrain.activeTerrain.transform.position.y;
-
+            point.y = Terrain.activeTerrain.SampleHeight(point) + Terrain.activeTerrain.transform.position.y;
             targetPoint = point;
+        }
+    }
+
+    private void RotateCannonToTarget()
+    {
+        Vector3 direction = targetPoint - transform.position;
+        direction.y = 0;
+        if (direction.sqrMagnitude > 0.001f)
+        {
+            Quaternion targetRotation = Quaternion.LookRotation(direction);
+            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * 10f);
         }
     }
 
@@ -120,7 +87,6 @@ public class CannonController : MonoBehaviour
         float gravity = Mathf.Abs(Physics.gravity.y);
 
         float h = Mathf.Max(arcHeight, heightDifference + 0.1f);
-
         float tUp = Mathf.Sqrt(2 * h / gravity);
         float tDown = Mathf.Sqrt(2 * Mathf.Max(0.1f, h - heightDifference) / gravity);
         float totalTime = tUp + tDown;
@@ -139,79 +105,35 @@ public class CannonController : MonoBehaviour
         for (int i = 0; i < trajectoryPoints; i++)
         {
             float t = i * trajectoryTimeStep;
-            Vector3 point = muzzle.position + velocity * t + 0.5f * Physics.gravity * t * t;
-            points[i] = point;
+            points[i] = muzzle.position + velocity * t + 0.5f * Physics.gravity * t * t;
         }
 
         lineRenderer.positionCount = trajectoryPoints;
         lineRenderer.SetPositions(points);
     }
 
-    private void Fire()
+    public void Shoot()
     {
-        if (isReloading) return;
-
         GameObject ball = Instantiate(cannonBallPrefab, muzzle.position, Quaternion.identity);
         Rigidbody rb = ball.GetComponent<Rigidbody>();
-
-        rb.isKinematic = false;
+        rb.velocity = CalculateBallisticVelocity(muzzle.position, targetPoint, arcHeight);
         rb.useGravity = true;
-        rb.drag = 0f;
-        rb.angularDrag = 0f;
-        rb.interpolation = RigidbodyInterpolation.None;
 
-        Vector3 velocity = CalculateBallisticVelocity(muzzle.position, targetPoint, arcHeight);
-        rb.velocity = velocity;
-
-        //lineRenderer.positionCount = 0;
-
-        fireAudio.Play();
+        cannonAudioSource.clip = fireAudioClip;
+        cannonAudioSource.Play();
         fireEffect.Play();
-
-        // Reloading
-        StartCoroutine(ReloadCoroutine());
     }
 
-    private IEnumerator ReloadCoroutine()
-    {
-        isReloading = true;
-        fireButton.interactable = false;
-        reloadSlider.value = 0f;
-
-        Color originalTextColor = fireButtonText.color;
-        Color fadedColor = originalTextColor;
-        fadedColor.a = 0.3f;
-        fireButtonText.color = fadedColor;
-
-        float timer = 0f;
-        while (timer < reloadTime)
-        {
-            timer += Time.deltaTime;
-            reloadSlider.value = timer / reloadTime;
-            yield return null;
-        }
-
-        fireButton.interactable = true;
-        fireButtonText.color = originalTextColor;
-        isReloading = false;
-    }
-
-    public void TakeDamage()
+    public void HandleLose()
     {
         if (isLose) return;
 
+        //If the cannon is destroyed then off the activity
+        cannonAudioSource.clip = defeatAudioClip;
+        cannonAudioSource.Play();
+
         isLose = true;
-
-        Debug.Log("Lose");
-        LoseEffect.Play();
-
-        fireButton.interactable = false;
-        Color originalTextColor = fireButtonText.color;
-        Color fadedColor = originalTextColor;
-        fadedColor.a = 0.3f; 
-        fireButtonText.color = fadedColor;
-
+        loseEffect.Play();
         lineRenderer.positionCount = 0;
     }
-
 }

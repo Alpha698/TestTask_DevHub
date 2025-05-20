@@ -67,7 +67,6 @@ sysinfo.txt
 [pP]rojectSettings/ProjectVersion.txt
 
 # Builds
-*.apk
 *.aab
 *.unitypackage
 

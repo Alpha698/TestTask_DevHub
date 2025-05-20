@@ -4,10 +4,8 @@ using UnityEngine;
 
 public class CannonBall : MonoBehaviour
 {
-    [SerializeField]
-    private Collider ballCollider;
-    [SerializeField]
-    private Rigidbody ballRigidbody;
+    [SerializeField] private Collider ballCollider;
+    [SerializeField] private Rigidbody ballRigidbody;
 
     private void OnCollisionEnter(Collision collision)
     {
